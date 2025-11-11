@@ -3,16 +3,16 @@ use axum::{ extract::{ State, Path }, http::StatusCode, response::Json };
 use std::sync::Arc;
 
 use crate::models::note_model::{ Note, CreateNotePayload, UpdateNotePayload };
-use crate::error::{AppError, AppResult}; // Untuk AppError dan AppResult
+use crate::error::{ AppError, AppResult }; // Untuk AppError dan AppResult
 use crate::models::api_response::ApiResponse; // Untuk respons API yang konsisten
 use crate::AppState; // buat AppState di main.rs
-
-
+use crate::extractor::ApiJson; // Impor ApiJson extractor
 
 // === CREATE ===
 pub async fn create_note(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<CreateNotePayload>
+    // Json(payload): Json<CreateNotePayload>
+    ApiJson(payload): ApiJson<CreateNotePayload>
 ) -> AppResult<(StatusCode, Json<ApiResponse<Note>>)> {
     let insert_result = sqlx
         ::query("INSERT INTO notes (title, content) VALUES (?, ?)")
@@ -64,8 +64,6 @@ pub async fn get_note_by_id(
     State(state): State<Arc<AppState>>,
     Path(id): Path<u32>
 ) -> AppResult<Json<ApiResponse<Note>>> {
-    // <-- Tipe return diubah
-
     let note = sqlx
         ::query_as::<_, Note>("SELECT * FROM notes WHERE id = ?")
         .bind(id)
@@ -93,7 +91,8 @@ pub async fn get_note_by_id(
 pub async fn update_note(
     State(state): State<Arc<AppState>>,
     Path(id): Path<u32>,
-    Json(payload): Json<UpdateNotePayload>
+    // Json(payload): Json<UpdateNotePayload>
+    ApiJson(payload): ApiJson<UpdateNotePayload>
 ) -> AppResult<Json<ApiResponse<Note>>> {
     // <-- Tipe return diubah
 
@@ -109,11 +108,11 @@ pub async fn update_note(
             }
         })?;
 
-    if let Some(title) = payload.title {
-        note.title = title;
+    if let Some(title) = &payload.title {
+        note.title = title.clone();
     }
-    if let Some(content) = payload.content {
-        note.content = Some(content);
+    if let Some(content) = &payload.content {
+        note.content = Some(content.clone());
     }
 
     sqlx

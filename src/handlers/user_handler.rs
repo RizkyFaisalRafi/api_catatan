@@ -7,10 +7,11 @@ use std::time::Duration;
 use chrono::{ Utc, FixedOffset }; // <-- MODIFIKASI BARIS INI
 use jsonwebtoken::{ encode, Header, EncodingKey };
 use humantime; // Untuk parse durasi "7d"
+use crate::extractor::ApiJson; // Impor ApiJson extractor
 
 use crate::{
     models::{
-        user_model::{ User, RegisterPayload, LoginPayload, TokenClaims, TokenResponse },
+        user_model::{ User, RegisterPayload, LoginPayload, TokenClaims, TokenResponse, UserProfile },
         api_response::ApiResponse,
     },
     error::{ AppError, AppResult },
@@ -38,7 +39,8 @@ async fn verify_password(password: String, hash: String) -> Result<bool, AppErro
 // === REGISTER ===
 pub async fn register(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<RegisterPayload>
+    // Json(payload): Json<RegisterPayload>
+    ApiJson(payload): ApiJson<RegisterPayload>
 ) -> AppResult<(StatusCode, Json<ApiResponse<User>>)> {
     // Cek apakah user sudah ada
     let existing_user = sqlx
@@ -50,13 +52,26 @@ pub async fn register(
         return Err(AppError::UserAlreadyExists);
     }
 
+    // Cek apakah username sudah ada (BARU)
+    let existing_user_username = sqlx
+        ::query("SELECT id FROM users WHERE username = ?")
+        .bind(&payload.username)
+        .fetch_optional(&state.db_pool).await?;
+
+    if existing_user_username.is_some() {
+        return Err(AppError::UsernameTaken); // Error baru
+    }
+
     // Hash password
-    let password_hash = hash_password(payload.password).await?;
+    let password_hash = hash_password(payload.password.clone()).await?;
 
     // Simpan user baru
-    let insert_result = sqlx
-        ::query("INSERT INTO users (email, password_hash) VALUES (?, ?)")
+    let insert_result = sqlx::query(
+        "INSERT INTO users (email, full_name, username, password_hash) VALUES (?, ?, ?, ?)"
+    )
         .bind(&payload.email)
+        .bind(&payload.full_name) // <-- TAMBAHKAN INI
+        .bind(&payload.username)
         .bind(&password_hash)
         .execute(&state.db_pool).await?;
 
@@ -80,7 +95,8 @@ pub async fn register(
 // === LOGIN ===
 pub async fn login(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<LoginPayload>
+    // Json(payload): Json<LoginPayload>
+    ApiJson(payload): ApiJson<LoginPayload>,
 ) -> AppResult<Json<ApiResponse<TokenResponse>>> {
     // Cari user berdasarkan email
     let user = sqlx
@@ -95,7 +111,7 @@ pub async fn login(
         })?;
 
     // Verifikasi password
-    let password_valid = verify_password(payload.password, user.password_hash).await?;
+    let password_valid = verify_password(payload.password.clone(), user.password_hash).await?;
 
     if !password_valid {
         return Err(AppError::WrongCredentials);
@@ -121,9 +137,7 @@ pub async fn login(
     // Buat variabel String (terformat) UNTUK RESPONS JSON
     let wib = FixedOffset::east_opt(7 * 3600).unwrap();
     let expires_at_wib = expires_at_datetime.with_timezone(&wib);
-    let formatted_expires_at = expires_at_wib
-        .format("%Y-%m-%d %H:%M:%S WIB")
-        .to_string();
+    let formatted_expires_at = expires_at_wib.format("%Y-%m-%d %H:%M:%S WIB").to_string();
 
     // Buat claims token (HARUS PAKAI i64)
     let claims = TokenClaims {
@@ -152,18 +166,43 @@ pub async fn login(
     Ok(Json(response))
 }
 
+// === GET PROFILE ===
+pub async fn get_profile(
+    State(state): State<Arc<AppState>>,
+    Extension(claims): Extension<TokenClaims> // Ambil user ID dari token
+) -> AppResult<Json<ApiResponse<UserProfile>>> {
+    let user_id = claims.sub;
+
+    // Ambil data profil user dari database, kecualikan password_hash
+    let user_profile = sqlx::query_as::<_, UserProfile>(
+        "SELECT id, email, full_name, username, created_at FROM users WHERE id = ?"
+    ) // <-- TAMBAHKAN full_name DI SINI
+        .bind(user_id)
+        .fetch_one(&state.db_pool).await
+        .map_err(|e| {
+            match e {
+                sqlx::Error::RowNotFound =>
+                    AppError::NotFound(format!("Profil user dengan id {} tidak ditemukan", user_id)),
+                _ => e.into(),
+            }
+        })?;
+
+    let response = ApiResponse {
+        status: "success".to_string(),
+        message: "Profil user berhasil diambil.".to_string(),
+        data: user_profile,
+    };
+
+    Ok(Json(response))
+}
+
 // === LOGOUT ===
 pub async fn logout(
     State(state): State<Arc<AppState>>,
     Extension(claims): Extension<TokenClaims>, // 1. Ambil claims dari middleware
     Extension(token_str): Extension<String> // 2. Ambil raw token string dari middleware
 ) -> AppResult<Json<ApiResponse<()>>> {
-    // 3. Dapatkan koneksi Redis
-    let mut redis_conn = state.redis_client.get_multiplexed_async_connection().await.map_err(|e| {
-        tracing::error!("Gagal konek Redis: {}", e);
-        AppError::SqlxError(sqlx::Error::PoolClosed) // Placeholder error
-    })?;
-
+    let mut redis_conn = state.redis_client.get_multiplexed_async_connection().await?;
     // 4. Hitung sisa masa berlaku token
     let now = Utc::now().timestamp();
     let ttl = claims.exp - now; // Time-to-live in seconds
@@ -181,17 +220,32 @@ pub async fn logout(
             token_str, // Key: token itu sendiri
             1, // Value: '1'
             ttl as u64 // Expiry: sisa waktu token
-        ).await
-        .map_err(|e| {
-            tracing::error!("Gagal set Redis: {}", e);
-            AppError::SqlxError(sqlx::Error::PoolClosed) // Placeholder error
-        })?;
-
+        ).await?;
     // 6. Kirim respons sukses
     let response = ApiResponse {
         status: "success".to_string(),
         message: "Logout berhasil.".to_string(),
         data: (), // data: null (akan di-skip oleh serde)
+    };
+
+    Ok(Json(response))
+}
+
+// === GET ALL USERS ===
+pub async fn get_all_users(
+    State(state): State<Arc<AppState>>
+) -> AppResult<Json<ApiResponse<Vec<UserProfile>>>> {
+    // Ambil semua data profil user dari database, urutkan berdasarkan yang terbaru
+    let users = sqlx
+        ::query_as::<_, UserProfile>(
+            "SELECT id, email, full_name, username, created_at FROM users ORDER BY created_at DESC"
+        )
+        .fetch_all(&state.db_pool).await?;
+
+    let response = ApiResponse {
+        status: "success".to_string(),
+        message: "Data semua user berhasil diambil.".to_string(),
+        data: users,
     };
 
     Ok(Json(response))

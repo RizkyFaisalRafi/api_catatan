@@ -23,12 +23,14 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         // --- Endpoint Notes ---
         .route("/notes", post(note_handler::create_note).get(note_handler::get_all_notes))
         .route(
-            "/notes/{id}",
+            "/notes/:id",
             get(note_handler::get_note_by_id)
                 .put(note_handler::update_note)
                 .delete(note_handler::delete_note)
         )
-        // --- Endpoint Logout ---
+        // --- Endpoint Users ---
+        .route("/users", get(user_handler::get_all_users)) // <-- TAMBAHKAN INI
+        .route("/auth/profile", get(user_handler::get_profile))
         .route("/auth/logout", post(user_handler::logout)) // <-- TAMBAHKAN INI
         // --- Terapkan Middleware ---
         .route_layer(

@@ -7,6 +7,8 @@ use sqlx::FromRow;
 pub struct User {
     pub id: u32,
     pub email: String,
+    pub full_name: String,
+    pub username: String,
     #[serde(skip_serializing)] // Tidak serialisasi ke JSON
     pub password_hash: String,
     pub created_at: DateTime<Utc>,
@@ -16,6 +18,8 @@ pub struct User {
 #[derive(Deserialize, Debug)]
 pub struct RegisterPayload {
     pub email: String,
+    pub full_name: String,
+    pub username: String,
     pub password: String,
 }
 
@@ -25,6 +29,16 @@ pub struct LoginPayload {
     pub password: String,
 }
 
+// Struct untuk data profil yang akan dikirim ke klien
+// Perhatikan tidak ada password_hash di sini.
+#[derive(FromRow, Debug, Serialize)]
+pub struct UserProfile {
+    pub id: u32,
+    pub email: String,
+    pub full_name: String,
+    pub username: String,
+    pub created_at: DateTime<Utc>,
+}
 // Struct untuk data di dalam token JWT
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TokenClaims {

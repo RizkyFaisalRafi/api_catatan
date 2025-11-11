@@ -5,6 +5,7 @@ mod routes;
 mod config; // Daftarkan modul config baru
 mod error; // Untuk AppError dan AppResult
 mod auth; // Untuk middleware autentikasi
+mod extractor; // Untuk extractor Json<T>
 
 use sqlx::MySqlPool;
 use std::sync::Arc;
