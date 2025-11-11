@@ -9,8 +9,13 @@ use axum::{
 };
 use std::sync::Arc;
 use crate::AppState;
-use crate::handlers::{ note_handler, user_handler };
-use crate::auth::auth_middleware;
+use crate::presentation::{
+    // Akses presentation/auth/mod.rs
+    // auth_middleware::auth_middleware,
+    auth::{auth_middleware::auth_middleware},
+    // middleware::auth_middleware,
+    handlers::{note_handler, user_handler},
+};
 
 pub fn create_router(state: Arc<AppState>) -> Router {
     // 1. Definisikan rute publik (tidak perlu login)

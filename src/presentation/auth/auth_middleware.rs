@@ -11,7 +11,11 @@ use chrono::Utc;
 use jsonwebtoken::{ decode, Validation, DecodingKey };
 use redis::AsyncCommands; // <-- Penting untuk .exists() dan .set_ex()
 
-use crate::{ error::AppError, models::user_model::TokenClaims, AppState };
+use crate::{
+    domain::models::user::TokenClaims,
+    utils::error::AppError,
+    AppState,
+};
 
 // Ini adalah middleware kita
 pub async fn auth_middleware(

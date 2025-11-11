@@ -1,25 +1,26 @@
-mod db;
-mod models;
-mod handlers;
-mod routes;
-mod config; // Daftarkan modul config baru
-mod error; // Untuk AppError dan AppResult
-mod auth; // Untuk middleware autentikasi
-mod extractor; // Untuk extractor Json<T>
+// Layering
+mod domain;
+mod application;
+mod infrastructure;
+mod presentation;
+mod utils; // <-- DEKLARASIKAN MODUL UTILS
 
+// Impor dependensi yang dibutuhkan
+use crate::domain::repositories::{note_repository::DynNoteRepository, user_repository::DynUserRepository};
+use crate::infrastructure::repositories::{note_repository_impl::NoteRepositoryImpl, user_repository_impl::UserRepositoryImpl};
+use crate::presentation::routes::create_router;
+use crate::utils::{config::{Config, load_config}, db};
 use sqlx::MySqlPool;
 use std::sync::Arc;
-use crate::routes::create_router;
 use redis::Client as RedisClient;
-
-// Impor fungsi config
-use crate::config::{ Config, load_config };
 
 #[derive(Clone)]
 pub struct AppState {
     pub db_pool: MySqlPool,
     pub config: Arc<Config>, // Simpan juga config di AppState (opsional, tapi bagus)
     pub redis_client: RedisClient, // Simpan client Redis di AppState
+    pub user_repo: DynUserRepository,
+    pub note_repo: DynNoteRepository,
 }
 
 #[tokio::main]
@@ -46,11 +47,17 @@ async fn main() {
     let redis_client = RedisClient::open(redis_url) // Gunakan 'redis_url'
         .expect("Gagal terhubung ke Redis");
 
+    // Inisialisasi Repositories
+    let user_repo = Arc::new(UserRepositoryImpl::new(pool.clone())) as DynUserRepository;
+    let note_repo = Arc::new(NoteRepositoryImpl::new(pool.clone())) as DynNoteRepository;
+
     // Buat AppState
     let app_state = Arc::new(AppState {
         db_pool: pool,
         config: Arc::new(config),
         redis_client: redis_client,
+        user_repo,
+        note_repo,
     });
 
     // Buat router dengan state

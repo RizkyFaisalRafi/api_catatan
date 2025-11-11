@@ -1,5 +1,5 @@
 use sqlx::mysql::{MySqlPool, MySqlPoolOptions};
-use crate::config::Config; // Impor struct Config kita
+use crate::utils::config::Config; // Impor struct Config kita
 
 // fungsi ini menerima 'config'
 pub async fn create_pool(config: &Config) -> MySqlPool {

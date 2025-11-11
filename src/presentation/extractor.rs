@@ -4,19 +4,19 @@ use axum::{
     Json,
 };
 use serde::de::DeserializeOwned;
-use crate::error::AppError;
+use crate::utils::error::AppError;
 use async_trait::async_trait;
-use axum::body::Body; // Pindahkan ke sini untuk kejelasan
-// 3. Buat struct "newtype" yang membungkus Axum::Json
-// 4. Beri tahu Axum untuk menggunakan AppError sebagai tipe Rejection
-//    Ini akan OTOMATIS memanggil `impl From<JsonRejection> for AppError`
-//    yang sudah Anda tulis di 'error.rs'
+use axum::body::Body;
+// Buat struct "newtype" yang membungkus Axum::Json
+// Beri tahu Axum untuk menggunakan AppError sebagai tipe Rejection
+// Ini akan OTOMATIS memanggil `impl From<JsonRejection> for AppError`
+// yang sudah Anda tulis di 'error.rs'
 pub struct ApiJson<T>(
-    // 5. Ekstraktor yang sebenarnya kita bungkus
+    // Ekstraktor yang sebenarnya kita bungkus
     pub Json<T>
 );
 #[async_trait]
-impl<S, T> FromRequest<S, Body> for ApiJson<T> // <-- Gunakan Body secara spesifik, hapus B
+impl<S, T> FromRequest<S, Body> for ApiJson<T> // Gunakan Body secara spesifik
 where
     T: DeserializeOwned,
     S: Send + Sync,

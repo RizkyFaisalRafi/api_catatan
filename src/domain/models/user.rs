@@ -1,10 +1,11 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 // Enum untuk Role, agar lebih aman dan terstruktur
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[allow(dead_code)]
 pub enum Role {
     User,
     Admin,
@@ -20,6 +21,7 @@ impl AsRef<str> for Role {
     }
 }
 
+// Entitas Domain 'User'
 // Mewakili tabel 'users' di database
 #[derive(FromRow, Debug, Serialize)]
 pub struct User {
@@ -27,8 +29,8 @@ pub struct User {
     pub email: String,
     pub full_name: String,
     pub username: String,
-    pub role: String, // <-- BACA SEBAGAI STRING DARI DB
-    #[serde(skip_serializing)] // Tidak serialisasi ke JSON
+    pub role: String,
+    #[serde(skip_serializing)]
     pub password_hash: String,
     pub created_at: DateTime<Utc>,
 }
@@ -48,6 +50,7 @@ pub struct LoginPayload {
     pub password: String,
 }
 
+// DTO (Data Transfer Object) untuk profil, bukan entitas murni
 // Struct untuk data profil yang akan dikirim ke klien
 // Perhatikan tidak ada password_hash di sini.
 #[derive(FromRow, Debug, Serialize)]
@@ -56,9 +59,10 @@ pub struct UserProfile {
     pub email: String,
     pub full_name: String,
     pub username: String,
-    pub role: String, // <-- BACA SEBAGAI STRING DARI DB
+    pub role: String,
     pub created_at: DateTime<Utc>,
 }
+
 // Struct untuk data di dalam token JWT
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TokenClaims {
@@ -70,6 +74,5 @@ pub struct TokenClaims {
 #[derive(Debug, Serialize)]
 pub struct TokenResponse {
     pub access_token: String,
-    // pub expires_at: DateTime<Utc>, // Timestamp kedaluwarsa
-    pub expires_at: String, // <-- UBAH DARI 'i64' atau 'DateTime<Utc>' MENJADI 'String'
+    pub expires_at: String,
 }

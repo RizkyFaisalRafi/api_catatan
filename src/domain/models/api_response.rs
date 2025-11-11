@@ -1,6 +1,5 @@
 use serde::Serialize;
 
-
 // Buat fungsi helper kecil ini di atas struct
 // Fungsi ini akan memeriksa apakah tipe 'T' adalah tipe unit '()'
 fn is_unit<T>(_: &T) -> bool {

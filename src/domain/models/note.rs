@@ -1,7 +1,10 @@
-use serde::{Deserialize, Serialize};
-// use chrono::NaiveDateTime;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+
+// Ini adalah Entitas Domain.
+// Atribut `FromRow` secara teknis adalah pelanggaran kecil terhadap Clean Architecture
+// karena bergantung pada `sqlx`, namun ini adalah kompromi pragmatis yang umum di Rust.
 
 // Struct ini mewakili data di tabel `notes`
 // `FromRow` -> untuk memetakan hasil query DB ke struct
@@ -9,9 +12,9 @@ use sqlx::FromRow;
 #[derive(Debug, FromRow, Serialize)]
 pub struct Note {
     pub id: u32,
+    pub user_id: u32, // <-- TAMBAHKAN INI
     pub title: String,
     pub content: Option<String>,
-    // pub created_at: Option<NaiveDateTime>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
