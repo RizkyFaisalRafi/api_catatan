@@ -36,5 +36,6 @@ pub struct TokenClaims {
 #[derive(Debug, Serialize)]
 pub struct TokenResponse {
     pub access_token: String,
-    pub expires_at: DateTime<Utc>, // Timestamp kedaluwarsa
+    // pub expires_at: DateTime<Utc>, // Timestamp kedaluwarsa
+    pub expires_at: String, // <-- UBAH DARI 'i64' atau 'DateTime<Utc>' MENJADI 'String'
 }

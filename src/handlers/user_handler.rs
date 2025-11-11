@@ -3,7 +3,8 @@ use axum::{ extract::{ State, Extension }, http::StatusCode, response::Json };
 use std::sync::Arc;
 use redis::AsyncCommands;
 use std::time::Duration;
-use chrono::Utc;
+// use chrono::Utc;
+use chrono::{ Utc, FixedOffset }; // <-- MODIFIKASI BARIS INI
 use jsonwebtoken::{ encode, Header, EncodingKey };
 use humantime; // Untuk parse durasi "7d"
 
@@ -111,41 +112,40 @@ pub async fn login(
 
     tracing::info!("Durasi token yang ter-parsing: {:?}", expires_in);
 
-    // let exp = (now + expires_in).timestamp();
+    // Buat variabel DateTime untuk waktu kedaluwarsa
+    let expires_at_datetime = now + expires_in;
 
-    // --- PERUBAHAN DI SINI ---
-    // 1. Buat objek DateTime untuk waktu kedaluwarsa
-    let expires_at_datetime = now + expires_in; 
-    
-    // 2. Buat timestamp (angka i64) KHUSUS UNTUK CLAIM JWT
+    // Buat variabel timestamp (i64) UNTUK CLAIM TOKEN
     let exp_timestamp = expires_at_datetime.timestamp();
 
+    // Buat variabel String (terformat) UNTUK RESPONS JSON
+    let wib = FixedOffset::east_opt(7 * 3600).unwrap();
+    let expires_at_wib = expires_at_datetime.with_timezone(&wib);
+    let formatted_expires_at = expires_at_wib
+        .format("%Y-%m-%d %H:%M:%S WIB")
+        .to_string();
+
+    // Buat claims token (HARUS PAKAI i64)
     let claims = TokenClaims {
         sub: user.id,
-        exp: exp_timestamp, // Claim JWT (exp) HARUS tetap angka
+        exp: exp_timestamp, // <-- Gunakan timestamp (i64), BUKAN string
     };
-    // --- AKHIR PERUBAHAN ---
 
-
-    // let claims = TokenClaims {
-    //     sub: user.id,
-    //     exp,
-    // };
-
+    // ... (kode encode token) ...
     let token = encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(state.config.jwt_secret_key.as_ref())
     ).map_err(|_| AppError::TokenCreationError)?;
 
-    // 4. Kirim respons
+    // Kirim respons
     let response = ApiResponse {
         status: "success".to_string(),
         message: "Login berhasil.".to_string(),
         data: TokenResponse {
             access_token: token,
             // expires_at: exp, // Timestamp kedaluwarsa
-            expires_at: expires_at_datetime,
+            expires_at: formatted_expires_at,
         },
     };
 
