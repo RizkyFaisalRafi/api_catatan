@@ -12,10 +12,19 @@ use sqlx::FromRow;
 #[derive(Debug, FromRow, Serialize)]
 pub struct Note {
     pub id: u32,
-    pub user_id: u32, // <-- TAMBAHKAN INI
+    pub user_id: u32,
     pub title: String,
     pub content: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
+}
+
+// Struct ini untuk data note baru yang akan disimpan ke DB
+// Ini berbeda dari payload karena menyertakan user_id
+#[derive(Debug, Deserialize)]
+pub struct NewNote {
+    pub user_id: u32,
+    pub title: String,
+    pub content: Option<String>,
 }
 
 // Struct ini untuk payload 'Create Note' (data dari user)
