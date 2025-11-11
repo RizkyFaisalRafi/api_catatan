@@ -12,12 +12,12 @@ pub struct Config {
     pub db_password: String,
     pub db_name: String,
 
-//     // Redis Configuration
-//     pub redis_host: String,
-//     pub redis_port: u16,
-//     pub redis_password: String,
-//     pub redis_db: i64,
-//     // pub redis_timeout: String, // envy belum bisa parse "5s", load sbg String
+    // Redis Configuration
+    pub redis_host: String,
+    pub redis_port: u16,
+    pub redis_password: String,
+    pub redis_db: i64,
+    // pub redis_timeout: String, // envy belum bisa parse "5s", load sbg String
 
 //     // SMTP Configuration
 //     pub smtp_host: String,
@@ -27,9 +27,11 @@ pub struct Config {
 //     pub smtp_name: String,
 //     // pub smtp_timeout: u16,
 
-//     // JWT Configuration
-//     pub jwt_secret_key: String,
-//     pub jwt_access_token_duration: String, // Load sbg String, parse nanti
+    // JWT Configuration
+    pub jwt_secret_key: String,
+    pub jwt_expires_in: String,
+
+    // pub jwt_access_token_duration: String, // Load sbg String, parse nanti
 //     pub jwt_refresh_token_duration: String, // Load sbg String, parse nanti
 //     pub jwt_temp_token_duration: String, // Load sbg String, parse nanti
 }

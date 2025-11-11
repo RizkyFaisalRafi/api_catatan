@@ -7,6 +7,9 @@ edition = "2024"
 # Framework Web Api
 axum = "0.8.6"
 
+# Untuk Hashing Password (aman & modern)
+bcrypt = "0.17.1"
+
 # Waktu dan Tanggal
 chrono = { version = "0.4.42", features = ["serde"] }
 
@@ -14,6 +17,15 @@ chrono = { version = "0.4.42", features = ["serde"] }
 dotenvy = "0.15.7"
 
 envy = "0.4.2"
+
+# Untuk parsing durasi (berguna untuk .env)
+humantime = "2.3.0"
+
+# Untuk JWT (Membuat dan validasi token)
+jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
+
+# redis dengan fitur integrasi tokio
+redis = { version = "0.32.7", features = ["tokio-comp", "connection-manager"] }
 
 # Serialisasi dan Deserialisasi JSON
 serde = { version = "1.0.228", features = ["derive"] }

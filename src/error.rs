@@ -1,8 +1,4 @@
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
-};
+use axum::{ http::StatusCode, response::{ IntoResponse, Response }, Json };
 
 use serde_json::json;
 
@@ -13,6 +9,13 @@ pub enum AppError {
     SqlxError(sqlx::Error),
     NotFound(String),
     // bisa menambah error lain di sini (e.g., AuthError)
+    UserAlreadyExists,
+    WrongCredentials,
+    HashingError,
+    TokenCreationError,
+    MissingToken,
+    InvalidToken,
+    TokenExpired,
 }
 
 // Ini adalah "magic" nya.
@@ -25,19 +28,48 @@ impl IntoResponse for AppError {
             AppError::SqlxError(e) => {
                 // Penting: Jangan bocorkan detail error database ke user
                 tracing::error!("SQLx Error: {}", e); // Log error untuk debugging
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Terjadi kesalahan pada server.".to_string(),
-                )
+                (StatusCode::INTERNAL_SERVER_ERROR, "Terjadi kesalahan pada server.".to_string())
             }
+
+            AppError::HashingError => {
+                // (Tambahan) Ini 5xx, sebaiknya di-log
+                tracing::error!("Hashing Error: Gagal memproses password.");
+                (StatusCode::INTERNAL_SERVER_ERROR, "Gagal memproses password.".to_string())
+            }
+            AppError::TokenCreationError => {
+                // (Tambahan) Ini 5xx, sebaiknya di-log
+                tracing::error!("JWT Error: Gagal membuat token.");
+                (StatusCode::INTERNAL_SERVER_ERROR, "Gagal membuat token.".to_string())
+            }
+
+            // --- Error 4xx (Client Error) ---
+            // Ini tidak perlu di-log sebagai 'error' karena ini kesalahan user
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
+            AppError::UserAlreadyExists =>
+                (
+                    StatusCode::CONFLICT, // 409 Conflict
+                    "User dengan email ini sudah terdaftar.".to_string(),
+                ),
+            AppError::WrongCredentials =>
+                (
+                    StatusCode::UNAUTHORIZED, // 401 Unauthorized
+                    "Email atau password salah.".to_string(),
+                ),
+            AppError::MissingToken =>
+                (StatusCode::UNAUTHORIZED, "Token autentikasi tidak ditemukan.".to_string()),
+            AppError::InvalidToken =>
+                (StatusCode::UNAUTHORIZED, "Token autentikasi tidak valid.".to_string()),
+            AppError::TokenExpired =>
+                (StatusCode::UNAUTHORIZED, "Token autentikasi telah kedaluwarsa.".to_string()),
         };
 
         // Buat body JSON untuk error
-        let body = Json(json!({
+        let body = Json(
+            json!({
             "status": "error",
             "message": error_message,
-        }));
+        })
+        );
 
         // Kembalikan (StatusCode, JsonBody)
         (status_code, body).into_response()
@@ -52,3 +84,6 @@ impl From<sqlx::Error> for AppError {
         AppError::SqlxError(e)
     }
 }
+
+// Tipe alias publik untuk Result<T, AppError>
+pub type AppResult<T> = Result<T, AppError>;

@@ -3,12 +3,11 @@ use axum::{ extract::{ State, Path }, http::StatusCode, response::Json };
 use std::sync::Arc;
 
 use crate::models::note_model::{ Note, CreateNotePayload, UpdateNotePayload };
-use crate::error::AppError; // Untuk AppError dan AppResult
+use crate::error::{AppError, AppResult}; // Untuk AppError dan AppResult
 use crate::models::api_response::ApiResponse; // Untuk respons API yang konsisten
 use crate::AppState; // buat AppState di main.rs
 
-// Tipe alias untuk 'Result', agar lebih rapi
-type AppResult<T> = Result<T, AppError>;
+
 
 // === CREATE ===
 pub async fn create_note(
