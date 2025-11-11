@@ -1,6 +1,25 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
+use std::str::FromStr;
+
+// Enum untuk Role, agar lebih aman dan terstruktur
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    User,
+    Admin,
+}
+
+// Implementasi agar kita bisa menulis Role::User.as_ref() -> "user"
+impl AsRef<str> for Role {
+    fn as_ref(&self) -> &str {
+        match self {
+            Role::User => "user",
+            Role::Admin => "admin",
+        }
+    }
+}
 
 // Mewakili tabel 'users' di database
 #[derive(FromRow, Debug, Serialize)]
@@ -9,6 +28,7 @@ pub struct User {
     pub email: String,
     pub full_name: String,
     pub username: String,
+    pub role: String, // <-- BACA SEBAGAI STRING DARI DB
     #[serde(skip_serializing)] // Tidak serialisasi ke JSON
     pub password_hash: String,
     pub created_at: DateTime<Utc>,
@@ -37,6 +57,7 @@ pub struct UserProfile {
     pub email: String,
     pub full_name: String,
     pub username: String,
+    pub role: String, // <-- BACA SEBAGAI STRING DARI DB
     pub created_at: DateTime<Utc>,
 }
 // Struct untuk data di dalam token JWT

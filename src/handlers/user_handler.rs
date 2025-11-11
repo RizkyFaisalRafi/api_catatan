@@ -9,9 +9,9 @@ use jsonwebtoken::{ encode, Header, EncodingKey };
 use humantime; // Untuk parse durasi "7d"
 use crate::extractor::ApiJson; // Impor ApiJson extractor
 
-use crate::{
+use crate::{ // <-- TAMBAHKAN Role DI SINI
     models::{
-        user_model::{ User, RegisterPayload, LoginPayload, TokenClaims, TokenResponse, UserProfile },
+        user_model::{ User, RegisterPayload, LoginPayload, TokenClaims, TokenResponse, UserProfile, Role },
         api_response::ApiResponse,
     },
     error::{ AppError, AppResult },
@@ -66,12 +66,15 @@ pub async fn register(
     let password_hash = hash_password(payload.password.clone()).await?;
 
     // Simpan user baru
-    let insert_result = sqlx::query(
-        "INSERT INTO users (email, full_name, username, password_hash) VALUES (?, ?, ?, ?)"
-    )
+    // Peran (role) secara otomatis di-set sebagai 'user'
+    let insert_result = sqlx
+        ::query(
+            "INSERT INTO users (email, full_name, username, role, password_hash) VALUES (?, ?, ?, ?, ?)"
+        )
         .bind(&payload.email)
         .bind(&payload.full_name) // <-- TAMBAHKAN INI
         .bind(&payload.username)
+        .bind(Role::User.as_ref()) // <-- UBAH MENJADI STRING "user"
         .bind(&password_hash)
         .execute(&state.db_pool).await?;
 
@@ -174,9 +177,10 @@ pub async fn get_profile(
     let user_id = claims.sub;
 
     // Ambil data profil user dari database, kecualikan password_hash
-    let user_profile = sqlx::query_as::<_, UserProfile>(
-        "SELECT id, email, full_name, username, created_at FROM users WHERE id = ?"
-    ) // <-- TAMBAHKAN full_name DI SINI
+    let user_profile = sqlx
+        ::query_as::<_, UserProfile>(
+            "SELECT id, email, full_name, username, role, created_at FROM users WHERE id = ?"
+        )
         .bind(user_id)
         .fetch_one(&state.db_pool).await
         .map_err(|e| {
@@ -238,7 +242,7 @@ pub async fn get_all_users(
     // Ambil semua data profil user dari database, urutkan berdasarkan yang terbaru
     let users = sqlx
         ::query_as::<_, UserProfile>(
-            "SELECT id, email, full_name, username, created_at FROM users ORDER BY created_at DESC"
+            "SELECT id, email, full_name, username, role, created_at FROM users ORDER BY created_at DESC"
         )
         .fetch_all(&state.db_pool).await?;
 
