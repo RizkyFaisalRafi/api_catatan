@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
-use std::str::FromStr;
 
 // Enum untuk Role, agar lebih aman dan terstruktur
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
