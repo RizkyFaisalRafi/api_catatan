@@ -59,6 +59,7 @@ pub async fn login(
     let claims = TokenClaims {
         sub: user.id,
         exp: exp_timestamp,
+        role: user.role,
     };
 
     let token = encode(

@@ -67,6 +67,7 @@ pub struct UserProfile {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TokenClaims {
     pub sub: u32,
+    pub role: String,
     pub exp: i64,
 }
 

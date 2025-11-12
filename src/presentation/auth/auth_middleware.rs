@@ -17,7 +17,7 @@ use crate::{
     AppState,
 };
 
-// Ini adalah middleware kita
+// Ini adalah middleware auth
 pub async fn auth_middleware(
     State(state): State<Arc<AppState>>,
     mut req: Request<Body>,

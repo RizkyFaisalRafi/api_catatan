@@ -23,6 +23,7 @@ pub enum AppError {
     MissingToken,
     InvalidToken,
     TokenExpired,
+    Forbidden, // <-- TAMBAHKAN INI
     UsernameTaken,
     // JsonRejection(ApiJsonRejection),
     JsonRejection(JsonRejection), // <-- Gunakan JsonRejection secara langsung
@@ -59,6 +60,8 @@ impl IntoResponse for AppError {
                 (StatusCode::UNAUTHORIZED, "Token autentikasi tidak valid.".to_string()),
             AppError::TokenExpired =>
                 (StatusCode::UNAUTHORIZED, "Token autentikasi telah kedaluwarsa.".to_string()),
+            AppError::Forbidden =>
+                (StatusCode::FORBIDDEN, "Anda tidak memiliki hak akses untuk sumber daya ini.".to_string()),
             AppError::UsernameTaken =>
                 (StatusCode::CONFLICT, "Username ini sudah digunakan.".to_string()),
 

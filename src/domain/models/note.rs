@@ -1,6 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+// Struct ini untuk payload 'Create Note' (data dari user)
+// `Deserialize` -> untuk mengubah JSON (request) ke struct
+use validator::Validate; // <-- Import
 
 // Ini adalah Entitas Domain.
 // Atribut `FromRow` secara teknis adalah pelanggaran kecil terhadap Clean Architecture
@@ -27,9 +30,7 @@ pub struct NewNote {
     pub content: Option<String>,
 }
 
-// Struct ini untuk payload 'Create Note' (data dari user)
-// `Deserialize` -> untuk mengubah JSON (request) ke struct
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)] // <-- Tambahkan Validate
 pub struct CreateNotePayload {
     pub title: String,
     pub content: Option<String>,
