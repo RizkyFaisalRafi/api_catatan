@@ -54,19 +54,4 @@ pub fn create_router(state: Arc<AppState>) -> Router {
     // 4. Gabungkan semua router
     Router::new().merge(public_routes).merge(protected_routes).with_state(state)
 
-    // Router::new()
-    //     // Gabungkan 'create' (POST) dan 'get_all' (GET)
-    //     .route("/notes", post(note_handler::create_note).get(note_handler::get_all_notes))
-    //     // Gabungkan 'get_by_id' (GET), 'update' (PUT), dan 'delete' (DELETE)
-    //     .route(
-    //         "/notes/{id}",
-    //         get(note_handler::get_note_by_id)
-    //             .put(note_handler::update_note)
-    //             .delete(note_handler::delete_note)
-    //     )
-    //     // --- RUTE UNTUK AUTENTIKASI ---
-    //     .route("/auth/register", post(user_handler::register))
-    //     .route("/auth/login", post(user_handler::login))
-    //     // --- AKHIR RUTE BARU ---
-    //     .with_state(state) // Injeksikan state (db pool)
 }
